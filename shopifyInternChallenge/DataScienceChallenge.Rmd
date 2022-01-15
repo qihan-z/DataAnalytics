@@ -103,6 +103,50 @@ mind after looking at the dataset in the previous question.
 aov%>%
   summarize(med = median(aov))
 ```
+## B. What metric would you report?
+I would report the median of the store AOV, because it is more robust to skewed
+distribution and outliers. 
+
+## C. What is its value?
+$153.
+
+# Question 2.
+## 1. How many orders were shipped by Speedy Express in total?
+```{r, eval=FALSE}
+SELECT COUNT(ShipperID)
+FROM Orders
+WHERE ShipperID == 1;
+```
 
 
+There are 54 orders shipped by Speedy Express in total.
+
+## 2. What is the last name of the employee with the most orders?
+```{r, eval=FALSE}
+WITH mostOrder as
+	(SELECT EmployeeID, COUNT(EmployeeID) FROM Orders as o
+GROUP BY o.EmployeeID
+ORDER BY COUNT(o.EmployeeID) DESC
+LIMIT 1)
+
+SELECT e.LastName FROM Employees as e, mostOrder as m
+WHERE e.EmployeeID == m.EmployeeID
+```
+
+The employee's name is Peacock
+
+## 3. What product was ordered the most in Germany?
+```{r, eval=FALSE}
+SELECT p.ProductName, SUM(Quantity) AS Total FROM Products p
+JOIN OrderDetails od ON p.ProductID == od.ProductID
+JOIN Orders o ON o.OrderID == od.OrderID
+JOIN Customers c ON c.CustomerID == o.CustomerID
+WHERE c.Country = 'Germany'
+GROUP BY p.ProductID
+ORDER BY Total DESC
+LIMIT 1
+```
+
+Product Name: Boston Crab Meat
+Total: 160.
 

@@ -1,0 +1,95 @@
+---
+title: "Data Science Challenge Solution"
+author: "QiHan Zhao"
+date: "1/14/2022"
+output: pdf_document
+---
+```{r import-libraries, echo=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readr)
+```
+
+# Question 1
+
+On Shopify, we have exactly 100 sneaker shops, and each of these shops sells only one model of shoe. We want to do some analysis of the average order value (AOV). When we look at orders data over a 30 day window, we naively calculate an AOV of $3145.13. Given that we know these shops are selling sneakers, a relatively affordable item, something seems wrong with our analysis. 
+
+```{r import dataset, echo=FALSE}
+shopData <- read_csv("~/Desktop/DataAnalytics/shopifyInternChallenge/2019 Winter Data Science Intern Challenge Data Set - Sheet1.csv")
+```
+
+## A. Think about what could be going wrong with our calculation. Think about a better way to evaluate this data.
+
+First, I want to check if there is any missing value in the columns 'order_amount'
+and 'total_items', since the two directly tie to the calculation of AOV:
+
+```{r}
+shopData%>%
+  select(order_amount, total_items)%>%
+  summarize(NA.in.Order.Amount = sum(is.na(order_amount)), 
+            NA.in.Total.items = sum(is.na(total_items)))
+```
+Since there are no missing values, I would proceed to check for the range of values the variable 'order_amount' take:
+```{r range-OrderAmount}
+summary(shopData$order_amount)
+```
+I also checked the range of values for 'total_items': 
+```{r range-OrderNumbers}
+summary(shopData$total_items)
+```
+
+Based on the two outputs, I would propose that one possible cause to the 
+unrealistically high AOV is that the value is calculated through averaging total 
+earnings over the numbers of entries in the dataset, instead of the actual number
+of orders. Because we have some extreme values in the trade deals, calculating 
+AOV in the former way would pull the value to a much higher number than it should
+be.
+
+### Alternative 1:
+The simplest alternative is to average the total amount over the total number of
+orders in the 30-days window:
+```{r}
+sum(shopData$order_amount)/sum(shopData$total_items)
+```
+This value is much more realistic than the given $3145.13, but it treats all 100
+shops as one entity and fails to take into account how "well" each store is doing. 
+Therefore, the following alternatives are all based on averaging each store's own
+AOV, which I believe reflects the market better for the shop owners.
+
+```{r avearage-store-aov}
+aov <- shopData%>%
+  group_by(shop_id)%>%
+  summarize(totalOrders = sum(total_items), 
+            aov = sum(order_amount)/totalOrders)
+```
+
+
+### Alternative 2:
+In this alternative, I will calculate the metric using the average of the shops' 
+individual AOV. But first, I will check to see if any shop is selling very 
+expensive sneakers. These shops are likely to be the minority in the market, but
+their AOV may pull the metric up depending on how high the former is:
+```{r}
+aov%>%
+  arrange(desc(aov))
+```
+As we can see from the output, shop 78's AOV is $25725, which is much higher than 
+the rest of the shops. Since it is just one of the shops, I will calculate the 
+average after dropping it from the dataset. 
+```{r}
+aov%>%
+  filter(aov < 1000)%>%
+  summarize(Average.AOV.of.All = trunc(mean(aov)))
+```
+
+### Alternative 2:
+Assuming the shop owners would also like 
+```{r}
+df <- aov%>%
+  group_by(aov)%>%
+  summarize(n=n())
+
+```
+
+
+
